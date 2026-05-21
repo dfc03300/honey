@@ -459,14 +459,14 @@ var CF_SVG        = '<svg width="13" height="13" viewBox="0 0 24 24" fill="curre
 
 /* ── 인증 정보 ── */
 var _cfEmail = '', _cfToken = '';
-(function() {
+function _loadCreds() {
   try {
     var e = localStorage.getItem('cf_email');
     var t = localStorage.getItem('cf_token');
-    if (e) _cfEmail = e;
-    if (t) _cfToken = t;
+    if (e) { _cfEmail = e; document.getElementById('cf-email').value = e; }
+    if (t) { _cfToken = t; document.getElementById('cf-token').value = t; }
   } catch(ex) {}
-})();
+}
 
 /* ── 날짜 ── */
 var _today = new Date();
@@ -757,6 +757,7 @@ function showCfResult(type, message, parentUrl) {
   el.innerHTML = html;
 }
 
+_loadCreds();
 updateCfBadge();
 updateCfBtn();
 </script>
