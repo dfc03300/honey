@@ -502,7 +502,9 @@ function addTask(block) {
   var input = document.getElementById(block + '-input');
   var text = input.value.trim();
   if (!text) return;
-  _tasks[block].push({ id: _uid++, text: text });
+  var activeChip = document.querySelector('#' + block + '-chips .chip.active');
+  var combined = activeChip ? activeChip.dataset.val + ' ' + text : text;
+  _tasks[block].push({ id: _uid++, text: combined });
   input.value = '';
   renderTaskList(block);
   renderPreview();
@@ -532,21 +534,17 @@ function renderTaskList(block) {
 }
 
 function getBlockTasks(block) {
-  var tasks = [];
-  document.querySelectorAll('#' + block + '-chips .chip.active').forEach(function(c){
-    tasks.push(c.dataset.val);
-  });
-  _tasks[block].forEach(function(t){ tasks.push(t.text); });
-  return tasks;
+  return _tasks[block].map(function(t){ return t.text; });
 }
 
-/* ── 칩 토글 → 미리보기 갱신 ── */
+/* ── 칩 단일 선택 (라디오) ── */
 document.querySelectorAll('.chips').forEach(function(group) {
   group.addEventListener('click', function(e) {
     var chip = e.target.closest('.chip');
     if (!chip) return;
-    chip.classList.toggle('active');
-    renderPreview();
+    var wasActive = chip.classList.contains('active');
+    group.querySelectorAll('.chip').forEach(function(c){ c.classList.remove('active'); });
+    if (!wasActive) chip.classList.add('active');
   });
 });
 
