@@ -457,15 +457,41 @@ var CF_SPACE      = 'DKDEV1';
 var CF_PARENT_URL = 'https://daekyo.atlassian.net/wiki/spaces/DKDEV1/folder/2713190934';
 var CF_SVG        = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15v-4H7l5-8v4h4l-5 8z"/></svg>';
 
-/* ── 인증 정보 ── */
+/* ── 인증 정보 (localStorage + cookie 이중 저장) ── */
 var _cfEmail = '', _cfToken = '';
+
+function _setCookie(name, val) {
+  var exp = new Date();
+  exp.setFullYear(exp.getFullYear() + 1);
+  document.cookie = name + '=' + encodeURIComponent(val) +
+    '; expires=' + exp.toUTCString() + '; path=/; SameSite=Lax';
+}
+function _getCookie(name) {
+  var prefix = name + '=';
+  var parts = document.cookie.split(';');
+  for (var i = 0; i < parts.length; i++) {
+    var c = parts[i].trim();
+    if (c.indexOf(prefix) === 0) return decodeURIComponent(c.slice(prefix.length));
+  }
+  return '';
+}
+function _saveCreds(email, token) {
+  _cfEmail = email; _cfToken = token;
+  try { localStorage.setItem('cf_email', email); localStorage.setItem('cf_token', token); } catch(ex) {}
+  try { _setCookie('cf_email', email); _setCookie('cf_token', token); } catch(ex) {}
+}
+function _clearCreds() {
+  _cfEmail = ''; _cfToken = '';
+  try { localStorage.removeItem('cf_email'); localStorage.removeItem('cf_token'); } catch(ex) {}
+  try { _setCookie('cf_email', ''); _setCookie('cf_token', ''); } catch(ex) {}
+}
 function _loadCreds() {
-  try {
-    var e = localStorage.getItem('cf_email');
-    var t = localStorage.getItem('cf_token');
-    if (e) { _cfEmail = e; document.getElementById('cf-email').value = e; }
-    if (t) { _cfToken = t; document.getElementById('cf-token').value = t; }
-  } catch(ex) {}
+  var e = '', t = '';
+  try { e = localStorage.getItem('cf_email') || ''; t = localStorage.getItem('cf_token') || ''; } catch(ex) {}
+  if (!e) e = _getCookie('cf_email');
+  if (!t) t = _getCookie('cf_token');
+  if (e) { _cfEmail = e; document.getElementById('cf-email').value = e; }
+  if (t) { _cfToken = t; document.getElementById('cf-token').value = t; }
 }
 
 /* ── 날짜 ── */
@@ -699,14 +725,12 @@ function saveCfSettings() {
   var token = document.getElementById('cf-token').value.trim();
   var msg = document.getElementById('cf-save-msg');
   if (!email || !token) { msg.style.color='var(--err-text)'; msg.textContent='이메일과 토큰을 모두 입력해주세요.'; return; }
-  _cfEmail = email; _cfToken = token;
-  try { localStorage.setItem('cf_email', email); localStorage.setItem('cf_token', token); } catch(ex) {}
+  _saveCreds(email, token);
   updateCfBadge();
   msg.style.color = 'var(--ok)'; msg.textContent = '저장되었습니다 ✓';
 }
 function clearCfSettings() {
-  _cfEmail = ''; _cfToken = '';
-  try { localStorage.removeItem('cf_email'); localStorage.removeItem('cf_token'); } catch(ex) {}
+  _clearCreds();
   document.getElementById('cf-email').value = '';
   document.getElementById('cf-token').value = '';
   document.getElementById('cf-save-msg').textContent = '';
