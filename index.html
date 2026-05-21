@@ -764,19 +764,17 @@ function openConfluence() {
       showCfResult('notfound', '"'+cfTitle+'" 문서가 아직 없습니다.', CF_PARENT_URL);
     }
   }).catch(function(err) {
-    if (err instanceof TypeError) {
-      var searchUrl = CF_BASE + '/wiki/search?text=' + encodeURIComponent(cfTitle);
-      window.open(searchUrl, '_blank');
-      showCfResult('notfound', 'API 차단으로 검색 페이지를 열었습니다.\n검색 결과에서 오늘 날짜 문서를 선택하세요.', CF_PARENT_URL);
-    } else {
-      showCfResult('error', '오류: ' + err.message);
-    }
+    var searchUrl = CF_BASE + '/wiki/search?text=' + encodeURIComponent(cfTitle);
+    showCfResult('notfound',
+      'CORS 제한으로 직접 호출 불가\n아래 링크를 클릭해 문서를 찾아주세요.',
+      CF_PARENT_URL, searchUrl);
   }).finally(function() { btn.disabled = false; updateCfBtn(); });
 }
-function showCfResult(type, message, parentUrl) {
+function showCfResult(type, message, parentUrl, searchUrl) {
   var el = document.getElementById('cf-result');
   el.className = 'cf-result ' + type + ' show';
   var html = '<div class="cf-result-msg">'+esc(message)+'</div>';
+  if (searchUrl) html += '<a class="btn-parent" href="'+esc(searchUrl)+'" target="_blank">🔍 Confluence에서 검색 열기</a>';
   if (parentUrl) html += '<a class="btn-parent" href="'+esc(parentUrl)+'" target="_blank">↑ 상위 폴더로 이동</a>';
   el.innerHTML = html;
 }
