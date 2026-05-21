@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>honey</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #ebebeb;
+      --surface:     #ffffff;
+      --surface-sub: #f7f7f7;
+      --border:      #d8d8d8;
+      --border-dark: #b8b8b8;
+      --text:        #1c1c1c;
+      --text-muted:  #888888;
+      --text-light:  #aaaaaa;
+      --ink:         #2c2c2c;
+      --ink-hover:   #1a1a1a;
+      --ok:          #4a7b59;
+      --ok-bg:       #eef4f0;
+      --warn-bg:     #faf5ea;
+      --warn-border: #d9c88a;
+      --warn-text:   #6b5500;
+      --err-bg:      #faf0f0;
+      --err-border:  #d8a8a8;
+      --err-text:    #7a2020;
+      --radius:      10px;
+      --radius-sm:   7px;
+      --shadow:      0 1px 6px rgba(0,0,0,.09);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Malgun Gothic', '맑은 고딕', 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    /* Header */
+    .header {
+      background: var(--ink);
+      color: #fff;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .header-icon { font-size: 18px; }
+    .header h1   { font-size: 14px; font-weight: 700; }
+    .header-date { font-size: 11.5px; opacity: .5; margin-left: auto; }
+
+    /* Container */
+    .container { width: 100%; padding: 12px 12px 60px; }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 4px;
+      gap: 4px;
+      box-shadow: var(--shadow);
+      margin-bottom: 12px;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 10px 8px;
+      border: none;
+      background: transparent;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      transition: all .16s;
+      font-family: inherit;
+      min-height: 42px;
+    }
+    .tab-btn:hover:not(.active) { background: var(--surface-sub); color: var(--ink); }
+    .tab-btn.active { background: var(--ink); color: #fff; }
+
+    /* Tab panels */
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* Card */
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .4px;
+      margin: 18px 0 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .section-label span { font-weight: 400; text-transform: none; color: var(--text-light); }
+    .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .section-label:first-child { margin-top: 0; }
+
+    /* Chips */
+    .chips { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 8px; }
+    .chip {
+      padding: 8px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      background: var(--surface-sub);
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all .14s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .chip:hover  { border-color: var(--border-dark); color: var(--ink); }
+    .chip.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+    input.task-input {
+      width: 100%;
+      padding: 9px 11px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 13.5px;
+      color: var(--text);
+      background: var(--surface-sub);
+      font-family: inherit;
+      transition: border-color .15s;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    input.task-input:focus { outline: none; border-color: var(--ink); background: #fff; }
+
+    /* Primary button */
+    .btn-gen {
+      width: 100%;
+      margin-top: 20px;
+      padding: 14px;
+      background: var(--ink);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background .15s;
+    }
+    .btn-gen:hover  { background: var(--ink-hover); }
+    .btn-gen:active { opacity: .85; }
+
+    /* Output: doc title */
+    .doc-title-box {
+      background: var(--surface-sub);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 9px 12px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .doc-title-label { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .3px; white-space: nowrap; }
+    .doc-title-text  { font-size: 13px; font-weight: 600; color: var(--text); flex: 1; word-break: break-all; }
+    .btn-sm {
+      padding: 4px 10px;
+      background: #fff; color: var(--ink);
+      border: 1.5px solid var(--border-dark);
+      border-radius: 5px;
+      font-size: 11px; font-weight: 700; cursor: pointer;
+      white-space: nowrap; font-family: inherit; transition: all .15s;
+    }
+    .btn-sm:hover { background: var(--surface-sub); }
+    .btn-sm.ok    { background: var(--ok-bg); color: var(--ok); border-color: #b8d8c0; }
+
+    /* All-copy */
+    .btn-all-copy {
+      width: 100%; padding: 11px; margin-bottom: 12px;
+      background: var(--ink); color: #fff;
+      border: none; border-radius: var(--radius-sm);
+      font-size: 13.5px; font-weight: 700; cursor: pointer;
+      font-family: inherit; transition: background .15s;
+    }
+    .btn-all-copy:hover { background: var(--ink-hover); }
+    .btn-all-copy.ok    { background: var(--ok); }
+
+    /* Preview table */
+    .preview-wrap { border: 1.5px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+    .preview-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .preview-table th {
+      background: var(--surface-sub); color: var(--ink);
+      font-weight: 700; padding: 8px 12px; text-align: center;
+      font-size: 12px;
+      border-bottom: 1.5px solid var(--border);
+      border-right: 1.5px solid var(--border);
+    }
+    .preview-table th:last-child { border-right: none; }
+    .preview-table td {
+      border-bottom: 1.5px solid var(--border);
+      border-right: 1.5px solid var(--border);
+      padding: 10px 12px; vertical-align: top;
+    }
+    .preview-table td:last-child { border-right: none; }
+    .preview-table tr:last-child td { border-bottom: none; }
+    .td-label {
+      text-align: center; font-weight: 700; width: 48px;
+      font-size: 12px; background: var(--surface-sub); color: var(--ink);
+      vertical-align: middle !important;
+    }
+    .cell-time  { font-weight: 700; color: var(--ink); font-size: 12px; margin-bottom: 4px; }
+    .cell-tasks { line-height: 1.9; }
+    .cell-task-item { font-size: 13px; color: var(--text); }
+    .cell-task-item::before { content: "• "; color: var(--text-muted); }
+    .cell-empty { color: var(--text-light); font-style: italic; font-size: 12px; }
+    .cell-footer { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); }
+    .btn-cell-copy {
+      padding: 4px 11px;
+      background: var(--surface-sub); color: var(--text-muted);
+      border: 1.5px solid var(--border); border-radius: 5px;
+      font-size: 11px; font-weight: 600; cursor: pointer;
+      font-family: inherit; transition: all .15s;
+    }
+    .btn-cell-copy:hover { background: var(--bg); color: var(--ink); border-color: var(--border-dark); }
+    .btn-cell-copy.ok    { background: var(--ok-bg); color: var(--ok); border-color: #b8d8c0; }
+
+    /* Confluence button */
+    .btn-cf-open {
+      width: 100%; margin-top: 14px; padding: 10px;
+      background: #fff; color: var(--ink);
+      border: 1.5px solid var(--border-dark);
+      border-radius: var(--radius-sm);
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      font-family: inherit; transition: all .15s;
+    }
+    .btn-cf-open:hover    { background: var(--surface-sub); border-color: var(--ink); }
+    .btn-cf-open:disabled { opacity: .45; cursor: not-allowed; }
+
+    /* CF Result */
+    .cf-result {
+      display: none; margin-top: 9px; padding: 11px 13px;
+      border-radius: var(--radius-sm);
+      font-size: 12.5px; flex-direction: column; gap: 8px; line-height: 1.55;
+    }
+    .cf-result.show     { display: flex; }
+    .cf-result.success  { background: var(--ok-bg); color: var(--ok); border: 1.5px solid #b8d8c0; }
+    .cf-result.notfound { background: var(--warn-bg); color: var(--warn-text); border: 1.5px solid var(--warn-border); }
+    .cf-result.error    { background: var(--err-bg); color: var(--err-text); border: 1.5px solid var(--err-border); }
+    .cf-result-msg      { font-weight: 600; white-space: pre-wrap; word-break: break-all; }
+
+    .btn-parent {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 6px 12px;
+      background: #fff; color: var(--warn-text);
+      border: 1.5px solid var(--warn-border); border-radius: 6px;
+      font-size: 12px; font-weight: 700; text-decoration: none;
+      font-family: inherit; transition: background .15s; width: fit-content;
+    }
+    .btn-parent:hover { background: var(--warn-bg); }
+
+    /* CF Settings */
+    .cf-settings-toggle {
+      display: flex; align-items: center; justify-content: center; gap: 5px;
+      width: 100%; margin-top: 10px; padding: 6px;
+      border: none; background: transparent;
+      font-size: 11.5px; color: var(--text-light);
+      cursor: pointer; font-family: inherit; transition: color .15s;
+      border-radius: var(--radius-sm);
+    }
+    .cf-settings-toggle:hover { color: var(--ink); background: var(--surface-sub); }
+
+    .cf-badge { display: inline-block; padding: 1px 7px; border-radius: 20px; font-size: 10px; font-weight: 700; }
+    .cf-badge.set    { background: var(--ok-bg); color: var(--ok); }
+    .cf-badge.notset { background: var(--err-bg); color: var(--err-text); }
+
+    .cf-settings-panel {
+      display: none; margin-top: 8px; padding: 14px;
+      background: var(--surface-sub); border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+    .cf-settings-panel.show { display: block; }
+    .cf-settings-title { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 10px; }
+    .cf-field { margin-bottom: 9px; }
+    .cf-field label { display: block; font-size: 10.5px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: .3px; }
+    .cf-field label a { font-weight: 400; text-transform: none; color: var(--ink); text-decoration: none; opacity: .7; }
+    .cf-field label a:hover { opacity: 1; text-decoration: underline; }
+    .cf-field input {
+      width: 100%; padding: 8px 10px;
+      border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+      font-size: 13px; color: var(--text); background: #fff;
+      font-family: inherit; -webkit-appearance: none;
+    }
+    .cf-field input:focus { outline: none; border-color: var(--ink); }
+    .cf-btn-row { display: flex; gap: 7px; margin-top: 10px; align-items: center; flex-wrap: wrap; }
+    .btn-cf-save {
+      padding: 8px 16px; background: var(--ink); color: #fff;
+      border: none; border-radius: 6px;
+      font-size: 12.5px; font-weight: 700; cursor: pointer;
+      font-family: inherit; transition: background .15s;
+    }
+    .btn-cf-save:hover { background: var(--ink-hover); }
+    .btn-cf-clear {
+      padding: 8px 12px; background: transparent; color: var(--text-muted);
+      border: 1.5px solid var(--border); border-radius: 6px;
+      font-size: 12px; font-weight: 600; cursor: pointer;
+      font-family: inherit; transition: all .15s;
+    }
+    .btn-cf-clear:hover { background: var(--err-bg); color: var(--err-text); border-color: var(--err-border); }
+
+    /* Placeholder */
+    .placeholder {
+      color: var(--text-light); font-style: italic; font-size: 12.5px;
+      text-align: center; padding: 48px 0;
+    }
+
+    /* Responsive */
+    @media (min-width: 680px) {
+      .container { padding: 16px 20px 60px; max-width: 680px; margin: 0 auto; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-icon">🍯</div>
+  <h1>honey</h1>
+  <div class="header-date" id="header-date"></div>
+</header>
+
+<div class="container">
+
+  <nav class="tabs" id="tabs">
+    <button class="tab-btn active" data-tab="t1">✏️ 업무 입력</button>
+    <button class="tab-btn"        data-tab="t2">📋 업무일지</button>
+  </nav>
+
+  <!-- ── Tab 1 : 입력 ── -->
+  <div id="t1" class="tab-panel active">
+    <div class="card">
+
+      <div class="section-label">오전 <span>08:00–12:00</span></div>
+      <div class="chips" id="am-chips">
+        <button class="chip" data-val="문제은행">문제은행</button>
+        <button class="chip" data-val="스코어국어">스코어국어</button>
+        <button class="chip" data-val="수국트">수국트</button>
+      </div>
+      <input class="task-input" type="text" id="am-text" placeholder="직접 입력 (선택)">
+
+      <div class="section-label">오후 <span>13:00–17:00</span></div>
+      <div class="chips" id="pm-chips">
+        <button class="chip" data-val="문제은행">문제은행</button>
+        <button class="chip" data-val="스코어국어">스코어국어</button>
+        <button class="chip" data-val="수국트">수국트</button>
+      </div>
+      <input class="task-input" type="text" id="pm-text" placeholder="직접 입력 (선택)">
+
+      <button class="btn-gen" onclick="genDoc()">문서 생성 →</button>
+    </div>
+  </div>
+
+  <!-- ── Tab 2 : 업무일지 출력 ── -->
+  <div id="t2" class="tab-panel">
+    <div class="card">
+
+      <div id="doc-out">
+        <div class="placeholder">탭 1에서 업무를 입력하고<br>'문서 생성'을 눌러주세요</div>
+      </div>
+
+      <button class="btn-cf-open" id="btn-cf-open" onclick="openConfluence()"></button>
+
+      <div class="cf-result" id="cf-result"></div>
+
+      <button class="cf-settings-toggle" onclick="toggleCfSettings()">
+        <span id="cf-status-badge"></span>&nbsp;⚙ Confluence 연동 설정
+      </button>
+
+      <div class="cf-settings-panel" id="cf-settings-panel">
+        <div class="cf-settings-title">Atlassian 계정 설정</div>
+        <div class="cf-field">
+          <label>이메일</label>
+          <input type="email" id="cf-email" placeholder="your@email.com">
+        </div>
+        <div class="cf-field">
+          <label>
+            API 토큰&nbsp;
+            <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank">→ 발급 페이지</a>
+          </label>
+          <input type="password" id="cf-token" placeholder="API 토큰 입력">
+        </div>
+        <div class="cf-btn-row">
+          <button class="btn-cf-save"  onclick="saveCfSettings()">저장</button>
+          <button class="btn-cf-clear" onclick="clearCfSettings()">초기화</button>
+          <span id="cf-save-msg" style="font-size:12px;font-weight:600;"></span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ── 상수 ── */
+var CF_BASE       = 'https://daekyo.atlassian.net';
+var CF_SPACE      = 'DKDEV1';
+var CF_PARENT_URL = 'https://daekyo.atlassian.net/wiki/spaces/DKDEV1/folder/2713190934';
+var CF_SVG        = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15v-4H7l5-8v4h4l-5 8z"/></svg>';
+
+/* ── 인증 정보 ── */
+var _cfEmail = '';
+var _cfToken = '';
+(function() {
+  try {
+    var e = localStorage.getItem('cf_email');
+    var t = localStorage.getItem('cf_token');
+    if (e) _cfEmail = e;
+    if (t) _cfToken = t;
+  } catch(ex) {}
+})();
+
+/* ── 오늘 날짜 ── */
+var _today = new Date();
+function pad(n) { return String(n).padStart(2, '0'); }
+var _DOW = ['일','월','화','수','목','금','토'];
+
+document.getElementById('header-date').textContent =
+  _today.getFullYear() + '년 ' + pad(_today.getMonth()+1) + '월 ' +
+  pad(_today.getDate()) + '일 (' + _DOW[_today.getDay()] + ')';
+
+function _titleDate() {
+  return String(_today.getFullYear()).slice(2) + pad(_today.getMonth()+1) + pad(_today.getDate());
+}
+function _cfTitle() {
+  return '[학습 UX팀] 재택업무일지 - ' +
+    String(_today.getFullYear()).slice(2) + '.' + pad(_today.getMonth()+1) + '.' + pad(_today.getDate());
+}
+function esc(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ── 탭 전환 ── */
+function switchTab(id) {
+  document.querySelectorAll('.tab-btn').forEach(function(b) {
+    b.classList.toggle('active', b.dataset.tab === id);
+  });
+  document.querySelectorAll('.tab-panel').forEach(function(p) {
+    p.classList.toggle('active', p.id === id);
+  });
+}
+document.getElementById('tabs').addEventListener('click', function(e) {
+  var btn = e.target.closest('.tab-btn');
+  if (btn) switchTab(btn.dataset.tab);
+});
+
+/* ── 칩 토글 ── */
+document.querySelectorAll('.chips').forEach(function(group) {
+  group.addEventListener('click', function(e) {
+    var chip = e.target.closest('.chip');
+    if (chip) chip.classList.toggle('active');
+  });
+});
+
+/* ── 업무 수집 ── */
+function getBlockTasks(chipsId, textId) {
+  var tasks = [];
+  document.querySelectorAll('#' + chipsId + ' .chip.active').forEach(function(c) {
+    tasks.push(c.dataset.val);
+  });
+  var txt = document.getElementById(textId).value.trim();
+  if (txt) tasks.push(txt);
+  return tasks;
+}
+
+/* ── 복사 ── */
+var _docData = { amHtml:'', amText:'', pmHtml:'', pmText:'', allHtml:'', allText:'' };
+
+function copyHtml(html, plain, btn) {
+  var orig = btn.textContent;
+  function done() {
+    btn.textContent = '복사됨 ✓'; btn.classList.add('ok');
+    setTimeout(function(){ btn.textContent = orig; btn.classList.remove('ok'); }, 2000);
+  }
+  if (window.ClipboardItem && navigator.clipboard && navigator.clipboard.write) {
+    navigator.clipboard.write([new ClipboardItem({
+      'text/html' : new Blob([html],  { type: 'text/html'  }),
+      'text/plain': new Blob([plain], { type: 'text/plain' })
+    })]).then(done).catch(function(){ execCopy(html, plain, btn, orig); });
+    return;
+  }
+  execCopy(html, plain, btn, orig);
+}
+function execCopy(html, plain, btn, orig) {
+  var el = document.createElement('div');
+  el.innerHTML = html;
+  el.style.cssText = 'position:fixed;left:-9999px;top:0;pointer-events:none;';
+  document.body.appendChild(el);
+  var r = document.createRange(); r.selectNodeContents(el);
+  var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+  var ok = false;
+  try { ok = document.execCommand('copy'); } catch(e) {}
+  s.removeAllRanges(); document.body.removeChild(el);
+  if (ok) {
+    btn.textContent = '복사됨 ✓'; btn.classList.add('ok');
+    setTimeout(function(){ btn.textContent = (btn._orig||btn.textContent); btn.classList.remove('ok'); }, 2000);
+    return;
+  }
+  if (navigator.clipboard) navigator.clipboard.writeText(plain).catch(function(){});
+}
+function copyText(text, btn) {
+  var orig = btn.textContent;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(function(){
+      btn.textContent = '복사됨 ✓'; btn.classList.add('ok');
+      setTimeout(function(){ btn.textContent = orig; btn.classList.remove('ok'); }, 2000);
+    }).catch(function(){});
+  }
+}
+
+/* ── 문서 생성 ── */
+function genDoc() {
+  var amTasks = getBlockTasks('am-chips', 'am-text');
+  var pmTasks = getBlockTasks('pm-chips', 'pm-text');
+
+  var amLi = amTasks.length ? amTasks.map(function(t){ return '<li>' + esc(t) + '</li>'; }).join('') : '<li>(미입력)</li>';
+  var pmLi = pmTasks.length ? pmTasks.map(function(t){ return '<li>' + esc(t) + '</li>'; }).join('') : '<li>(미입력)</li>';
+
+  _docData.amHtml  = '<p>[오전] 08:00-12:00</p><ul>' + amLi + '</ul>';
+  _docData.amText  = '[오전] 08:00-12:00\n' + (amTasks.length ? amTasks.map(function(t){ return '• '+t; }).join('\n') : '• (미입력)');
+  _docData.pmHtml  = '<p>[오후] 13:00-17:00</p><ul>' + pmLi + '</ul>';
+  _docData.pmText  = '[오후] 13:00-17:00\n' + (pmTasks.length ? pmTasks.map(function(t){ return '• '+t; }).join('\n') : '• (미입력)');
+  _docData.allHtml = _docData.amHtml + _docData.pmHtml;
+  _docData.allText = _docData.amText + '\n\n' + _docData.pmText;
+
+  var docTitle = _titleDate() + '_재택근무자 일일업무일지';
+
+  function cellView(label, tasks) {
+    var rows = tasks.length
+      ? tasks.map(function(t){ return '<div class="cell-task-item">' + esc(t) + '</div>'; }).join('')
+      : '<div class="cell-empty">(미입력)</div>';
+    return '<div class="cell-time">' + label + '</div><div class="cell-tasks">' + rows + '</div>';
+  }
+
+  var out = document.getElementById('doc-out');
+  out.innerHTML = '';
+
+  /* 제목 박스 */
+  var titleBox = document.createElement('div');
+  titleBox.className = 'doc-title-box';
+  titleBox.innerHTML =
+    '<span class="doc-title-label">📌 제목</span>' +
+    '<span class="doc-title-text">' + esc(docTitle) + '</span>';
+  var tcBtn = document.createElement('button');
+  tcBtn.className = 'btn-sm'; tcBtn.textContent = '복사';
+  tcBtn.addEventListener('click', function(){ copyText(docTitle, tcBtn); });
+  titleBox.appendChild(tcBtn);
+  out.appendChild(titleBox);
+
+  /* 전체 복사 */
+  var allBtn = document.createElement('button');
+  allBtn.className = 'btn-all-copy';
+  allBtn.textContent = '오전+오후 전체 복사 — Confluence 붙여넣기용';
+  allBtn.addEventListener('click', function(){ copyHtml(_docData.allHtml, _docData.allText, allBtn); });
+  out.appendChild(allBtn);
+
+  /* 테이블 */
+  var wrap = document.createElement('div');
+  wrap.className = 'preview-wrap';
+  wrap.innerHTML =
+    '<table class="preview-table">' +
+      '<thead><tr><th style="width:48px;">구분</th><th>수행업무</th></tr></thead>' +
+      '<tbody>' +
+        '<tr><td class="td-label">오전</td><td>' +
+          cellView('[오전] 08:00-12:00', amTasks) +
+          '<div class="cell-footer"><button class="btn-cell-copy" id="btn-am-cp">오전 셀 복사</button></div>' +
+        '</td></tr>' +
+        '<tr><td class="td-label">오후</td><td>' +
+          cellView('[오후] 13:00-17:00', pmTasks) +
+          '<div class="cell-footer"><button class="btn-cell-copy" id="btn-pm-cp">오후 셀 복사</button></div>' +
+        '</td></tr>' +
+      '</tbody></table>';
+  out.appendChild(wrap);
+
+  wrap.querySelector('#btn-am-cp').addEventListener('click', function(){ copyHtml(_docData.amHtml, _docData.amText, this); });
+  wrap.querySelector('#btn-pm-cp').addEventListener('click', function(){ copyHtml(_docData.pmHtml, _docData.pmText, this); });
+
+  /* CF result 초기화 */
+  document.getElementById('cf-result').className = 'cf-result';
+  document.getElementById('cf-result').innerHTML = '';
+
+  /* 탭 2로 자동 이동 */
+  switchTab('t2');
+}
+
+/* ── Confluence 연동 ── */
+function updateCfBadge() {
+  var badge = document.getElementById('cf-status-badge');
+  badge.className = 'cf-badge ' + (_cfEmail && _cfToken ? 'set' : 'notset');
+  badge.textContent = (_cfEmail && _cfToken) ? '연동됨' : '미설정';
+}
+function updateCfBtn() {
+  document.getElementById('btn-cf-open').innerHTML = CF_SVG + '&nbsp;' + esc(_cfTitle());
+}
+
+function toggleCfSettings() {
+  var panel = document.getElementById('cf-settings-panel');
+  panel.classList.toggle('show');
+  if (_cfEmail) document.getElementById('cf-email').value = _cfEmail;
+  if (_cfToken) document.getElementById('cf-token').value = _cfToken;
+  document.getElementById('cf-save-msg').textContent = '';
+}
+function saveCfSettings() {
+  var email = document.getElementById('cf-email').value.trim();
+  var token = document.getElementById('cf-token').value.trim();
+  var msg   = document.getElementById('cf-save-msg');
+  if (!email || !token) {
+    msg.style.color = 'var(--err-text)';
+    msg.textContent = '이메일과 토큰을 모두 입력해주세요.';
+    return;
+  }
+  _cfEmail = email; _cfToken = token;
+  try { localStorage.setItem('cf_email', email); localStorage.setItem('cf_token', token); } catch(ex) {}
+  updateCfBadge();
+  msg.style.color = 'var(--ok)';
+  msg.textContent = '저장되었습니다 ✓';
+}
+function clearCfSettings() {
+  _cfEmail = ''; _cfToken = '';
+  try { localStorage.removeItem('cf_email'); localStorage.removeItem('cf_token'); } catch(ex) {}
+  document.getElementById('cf-email').value = '';
+  document.getElementById('cf-token').value = '';
+  document.getElementById('cf-save-msg').textContent = '';
+  updateCfBadge();
+  showCfResult('error', '설정이 초기화되었습니다.');
+}
+
+function openConfluence() {
+  if (!_cfEmail || !_cfToken) {
+    document.getElementById('cf-settings-panel').classList.add('show');
+    if (_cfEmail) document.getElementById('cf-email').value = _cfEmail;
+    showCfResult('error', '아래 설정에서 이메일과 API 토큰을 먼저 입력해주세요.');
+    return;
+  }
+  var cfTitle = _cfTitle();
+  var btn = document.getElementById('btn-cf-open');
+  btn.disabled = true;
+  btn.innerHTML = '검색 중...';
+
+  var params = new URLSearchParams({ title: cfTitle, spaceKey: CF_SPACE, type: 'page', expand: '_links.webui' });
+  fetch(CF_BASE + '/wiki/rest/api/content?' + params.toString(), {
+    headers: { 'Authorization': 'Basic ' + btoa(_cfEmail + ':' + _cfToken), 'Accept': 'application/json' }
+  }).then(function(res) {
+    if (res.status === 401) { showCfResult('error', '인증 실패 (401)\n이메일·API 토큰을 확인해주세요.'); return null; }
+    if (!res.ok)            { showCfResult('error', 'API 오류 (' + res.status + ')'); return null; }
+    return res.json();
+  }).then(function(data) {
+    if (!data) return;
+    if (data.results && data.results.length > 0) {
+      window.open(CF_BASE + data.results[0]._links.webui, '_blank');
+      showCfResult('success', '"' + cfTitle + '" 문서를 열었습니다.');
+    } else {
+      showCfResult('notfound', '"' + cfTitle + '" 문서가 아직 없습니다.', CF_PARENT_URL);
+    }
+  }).catch(function(err) {
+    if (err instanceof TypeError) {
+      /* CORS 차단 → Confluence 검색 페이지로 fallback */
+      var searchUrl = CF_BASE + '/wiki/search?text=' + encodeURIComponent(cfTitle);
+      window.open(searchUrl, '_blank');
+      showCfResult('notfound',
+        'API 직접 호출이 차단되어 Confluence 검색 페이지를 열었습니다.\n검색 결과에서 오늘 날짜 문서를 선택하세요.\n\n(python -m http.server 8080 으로 실행하면 자동으로 문서가 열립니다)',
+        CF_PARENT_URL);
+    } else {
+      showCfResult('error', '오류: ' + err.message);
+    }
+  }).finally(function() {
+    btn.disabled = false; updateCfBtn();
+  });
+}
+function showCfResult(type, message, parentUrl) {
+  var el = document.getElementById('cf-result');
+  el.className = 'cf-result ' + type + ' show';
+  var html = '<div class="cf-result-msg">' + esc(message) + '</div>';
+  if (parentUrl) html += '<a class="btn-parent" href="' + esc(parentUrl) + '" target="_blank">↑ 상위 폴더로 이동</a>';
+  el.innerHTML = html;
+}
+
+/* ── 초기화 ── */
+updateCfBadge();
+updateCfBtn();
+</script>
+</body>
+</html>
