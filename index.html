@@ -457,8 +457,9 @@ var CF_SPACE      = 'DKDEV1';
 var CF_PARENT_URL = 'https://daekyo.atlassian.net/wiki/spaces/DKDEV1/folder/2713190934';
 var CF_SVG        = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15v-4H7l5-8v4h4l-5 8z"/></svg>';
 
-/* ── 인증 정보 (localStorage + cookie 이중 저장) ── */
+/* ── 인증 정보 ── */
 var _cfEmail = '', _cfToken = '';
+var _LS_KEY = 'honey_creds_v1';
 
 function _setCookie(name, val) {
   var exp = new Date();
@@ -475,23 +476,49 @@ function _getCookie(name) {
   }
   return '';
 }
+
+/* 저장 후 즉시 읽기로 실제 저장 여부 반환 */
 function _saveCreds(email, token) {
   _cfEmail = email; _cfToken = token;
-  try { localStorage.setItem('cf_email', email); localStorage.setItem('cf_token', token); } catch(ex) {}
-  try { _setCookie('cf_email', email); _setCookie('cf_token', token); } catch(ex) {}
+  var lsOk = false;
+  try {
+    var payload = JSON.stringify({ e: email, t: token });
+    localStorage.setItem(_LS_KEY, payload);
+    lsOk = localStorage.getItem(_LS_KEY) === payload; /* 즉시 검증 */
+  } catch(ex) {}
+  /* 쿠키 이중 저장 (localStorage 실패 시 fallback) */
+  try { _setCookie('hce', email); _setCookie('hct', token); } catch(ex) {}
+  return lsOk;
 }
+
 function _clearCreds() {
   _cfEmail = ''; _cfToken = '';
-  try { localStorage.removeItem('cf_email'); localStorage.removeItem('cf_token'); } catch(ex) {}
-  try { _setCookie('cf_email', ''); _setCookie('cf_token', ''); } catch(ex) {}
+  try { localStorage.removeItem(_LS_KEY); } catch(ex) {}
+  try { _setCookie('hce', ''); _setCookie('hct', ''); } catch(ex) {}
 }
+
 function _loadCreds() {
   var e = '', t = '';
-  try { e = localStorage.getItem('cf_email') || ''; t = localStorage.getItem('cf_token') || ''; } catch(ex) {}
-  if (!e) e = _getCookie('cf_email');
-  if (!t) t = _getCookie('cf_token');
-  if (e) { _cfEmail = e; document.getElementById('cf-email').value = e; }
-  if (t) { _cfToken = t; document.getElementById('cf-token').value = t; }
+  /* 1) localStorage JSON */
+  try {
+    var raw = localStorage.getItem(_LS_KEY);
+    if (raw) { var p = JSON.parse(raw); e = p.e || ''; t = p.t || ''; }
+  } catch(ex) {}
+  /* 2) 구버전 키 마이그레이션 */
+  if (!e) { try { e = localStorage.getItem('cf_email') || ''; t = localStorage.getItem('cf_token') || ''; } catch(ex) {} }
+  /* 3) 쿠키 fallback */
+  if (!e) e = _getCookie('hce');
+  if (!t) t = _getCookie('hct');
+
+  _cfEmail = e; _cfToken = t;
+  if (e) document.getElementById('cf-email').value = e;
+  if (t) document.getElementById('cf-token').value = t;
+
+  /* 미설정이면 설정 패널 자동 오픈 */
+  if (!e || !t) {
+    document.getElementById('cf-settings-panel').classList.add('show');
+  }
+  return !!(e && t);
 }
 
 /* ── 날짜 ── */
@@ -725,9 +752,15 @@ function saveCfSettings() {
   var token = document.getElementById('cf-token').value.trim();
   var msg = document.getElementById('cf-save-msg');
   if (!email || !token) { msg.style.color='var(--err-text)'; msg.textContent='이메일과 토큰을 모두 입력해주세요.'; return; }
-  _saveCreds(email, token);
+  var lsOk = _saveCreds(email, token);
   updateCfBadge();
-  msg.style.color = 'var(--ok)'; msg.textContent = '저장되었습니다 ✓';
+  if (lsOk) {
+    msg.style.color = 'var(--ok)';
+    msg.textContent = '저장됨 ✓ (재시작 후 유지)';
+  } else {
+    msg.style.color = '#d07000';
+    msg.textContent = '⚠ 브라우저가 저장을 막았습니다. 재접속 시 재입력 필요';
+  }
 }
 function clearCfSettings() {
   _clearCreds();
