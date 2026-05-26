@@ -345,6 +345,37 @@
       text-align: center; padding: 48px 0;
     }
 
+    /* 북마크릿 섹션 */
+    .bm-section {
+      margin-top: 12px; padding: 13px 14px;
+      background: var(--surface-sub); border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+    .bm-label {
+      font-size: 11px; font-weight: 700; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .4px; margin-bottom: 4px;
+    }
+    .bm-label span { font-weight: 400; text-transform: none; color: var(--text-light); }
+    .bm-tip { font-size: 12px; color: var(--text-muted); margin-bottom: 9px; }
+    .btn-bm {
+      display: inline-block; padding: 9px 16px;
+      background: var(--ink); color: #fff; border-radius: var(--radius-sm);
+      font-size: 13px; font-weight: 700; cursor: grab;
+      text-decoration: none; font-family: inherit; user-select: none;
+    }
+    .btn-bm:hover { background: var(--ink-hover); }
+
+    /* 자동입력 복사 버튼 */
+    .btn-auto-copy {
+      width: 100%; margin-top: 10px; padding: 11px;
+      background: #2a5ca8; color: #fff; border: none;
+      border-radius: var(--radius-sm); font-size: 13px; font-weight: 700;
+      cursor: pointer; font-family: inherit; transition: background .15s;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .btn-auto-copy:hover { background: #1e4a8a; }
+    .btn-auto-copy.ok    { background: var(--ok); }
+
     @media (min-width: 680px) {
       .container { padding: 16px 20px 60px; max-width: 680px; margin: 0 auto; }
     }
@@ -444,6 +475,12 @@
           <button class="btn-cf-clear" onclick="clearCfSettings()">초기화</button>
           <span id="cf-save-msg" style="font-size:12px;font-weight:600;"></span>
         </div>
+      </div>
+      <!-- 북마크릿 설치 -->
+      <div class="bm-section">
+        <div class="bm-label">🔖 북마크 설치 <span>한 번만 · 어디서든 사용 가능</span></div>
+        <div class="bm-tip">아래 버튼을 브라우저 북마크바로 드래그해서 저장하세요</div>
+        <a id="honey-bm-link" class="btn-bm" draggable="true">🤖 honey 자동입력</a>
       </div>
     </div>
   </div>
@@ -725,6 +762,35 @@ function genDoc() {
   wrap.querySelector('#btn-am-cp').addEventListener('click', function(){ copyHtml(_docData.amHtml, _docData.amText, this); });
   wrap.querySelector('#btn-pm-cp').addEventListener('click', function(){ copyHtml(_docData.pmHtml, _docData.pmText, this); });
 
+  /* 자동입력용 복사 버튼 */
+  var _payload = 'HONEY:' + JSON.stringify({
+    title: docTitle,
+    date: _today.getFullYear() + '-' + pad(_today.getMonth()+1) + '-' + pad(_today.getDate()) + '(' + _DOW[_today.getDay()] + ')',
+    am: amTasks,
+    pm: pmTasks
+  });
+  var autoBtn = document.createElement('button');
+  autoBtn.className = 'btn-auto-copy';
+  autoBtn.innerHTML = '🤖 업무일지 자동입력용 데이터 복사';
+  autoBtn.addEventListener('click', function() {
+    var orig = autoBtn.innerHTML;
+    function done() {
+      autoBtn.innerHTML = '✅ 복사됨! — 업무일지 페이지에서 북마크 클릭';
+      autoBtn.classList.add('ok');
+      setTimeout(function(){ autoBtn.innerHTML = orig; autoBtn.classList.remove('ok'); }, 3000);
+    }
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(_payload).then(done).catch(fbCopy);
+    } else { fbCopy(); }
+    function fbCopy() {
+      var ta = document.createElement('textarea'); ta.value = _payload;
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); } catch(e) {}
+      document.body.removeChild(ta); done();
+    }
+  });
+  out.appendChild(autoBtn);
+
   document.getElementById('cf-result').className = 'cf-result';
   document.getElementById('cf-result').innerHTML = '';
 
@@ -815,6 +881,33 @@ function showCfResult(type, message, parentUrl, searchUrl) {
 _loadCreds();
 updateCfBadge();
 updateCfBtn();
+
+/* ── 북마크릿 ── */
+function _honeyBmFn() {
+  navigator.clipboard.readText().then(function(t) {
+    var i = t.indexOf("HONEY:");
+    if (i < 0) { alert("honey 앱에서 자동입력용 데이터를 먼저 복사해주세요."); return; }
+    var d;
+    try { d = JSON.parse(t.slice(i + 6)); } catch(e) { alert("오류: " + e.message); return; }
+    var r = document.getElementById("reportName");
+    if (r) { r.value = d.title; r.dispatchEvent(new Event("input", {bubbles:true})); }
+    var de = document.getElementById("editorForm_3");
+    if (de) { de.value = d.date; de.dispatchEvent(new Event("input", {bubbles:true})); de.dispatchEvent(new Event("change", {bubbles:true})); }
+    function fill(id, h) {
+      var f = document.getElementById("dext_frame_" + id);
+      if (!f) return;
+      var doc = f.contentDocument || f.contentWindow.document;
+      var e = doc.querySelector(".DEXT_fiVe_EdiTor,[id^='ue_editor_main']");
+      if (e) e.innerHTML = h;
+    }
+    var ah = d.am && d.am.length ? "<ul>" + d.am.map(function(t) { return "<li>" + t + "</li>"; }).join("") + "</ul>" : "";
+    var ph = d.pm && d.pm.length ? "<ul>" + d.pm.map(function(t) { return "<li>" + t + "</li>"; }).join("") + "</ul>" : "";
+    fill("editorForm_5", ah);
+    fill("editorForm_8", ph);
+    alert("✅ 자동입력 완료!\n세부내용·산출물은 직접 입력해주세요.");
+  }).catch(function() { alert("클립보드 권한을 허용해주세요."); });
+}
+document.getElementById("honey-bm-link").href = "javascript:(" + _honeyBmFn.toString() + ")()";
 </script>
 </body>
 </html>
