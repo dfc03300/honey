@@ -945,20 +945,32 @@ function _honeyBmFn() {
       var doc = f.contentDocument || f.contentWindow.document;
       var e = doc.querySelector('.DEXT_fiVe_EdiTor,[id^="ue_editor_main"]');
       if (!e) return;
+      // contenteditable 보장
+      if (e.getAttribute('contenteditable') !== 'true') e.setAttribute('contenteditable','true');
       e.innerHTML = h;
-      // innerHTML 반영 후 약간 딜레이를 두고 마우스 이벤트 시퀀스로 에디터 활성화
+      // input 이벤트로 DEXT5에 변경 알림
+      try { e.dispatchEvent(new Event('input',{bubbles:true})); } catch(er) {}
       setTimeout(function() {
+        // 1) 부모 문서에서 iframe 요소 자체를 focus (브라우저가 iframe을 활성화)
+        try { f.focus(); } catch(er) {}
+        // 2) iframe window focus
         try { f.contentWindow.focus(); } catch(er) {}
+        // 3) 에디터 div focus
         try { e.focus(); } catch(er) {}
+        // 4) 첫 번째 텍스트 노드 또는 li에 마우스 이벤트 시퀀스
+        var target = e.querySelector('li,p') || e;
         ['mousedown','mouseup','click'].forEach(function(ev) {
-          try { e.dispatchEvent(new MouseEvent(ev, {bubbles:true, cancelable:true, view:f.contentWindow})); } catch(er) {}
+          try { target.dispatchEvent(new MouseEvent(ev,{bubbles:true,cancelable:true,view:f.contentWindow})); } catch(er) {}
         });
+        // 5) 커서 끝으로
         try {
           var rng = doc.createRange(), sel = f.contentWindow.getSelection();
           rng.selectNodeContents(e); rng.collapse(false);
           sel.removeAllRanges(); sel.addRange(rng);
         } catch(er) {}
-      }, 200);
+        // 6) focus 이벤트도 명시적으로 발생
+        try { e.dispatchEvent(new FocusEvent('focus',{bubbles:true,view:f.contentWindow})); } catch(er) {}
+      }, 300);
     }
     var ah = d.am&&d.am.length ? '<ul>'+d.am.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul>' : '';
     var ph = d.pm&&d.pm.length ? '<ul>'+d.pm.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul>' : '';
