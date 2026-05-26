@@ -944,12 +944,21 @@ function _honeyBmFn() {
       if (!f) return;
       var doc = f.contentDocument || f.contentWindow.document;
       var e = doc.querySelector('.DEXT_fiVe_EdiTor,[id^="ue_editor_main"]');
-      if (e) {
-        e.innerHTML = h;
-        try { e.click(); } catch(er) {}
+      if (!e) return;
+      e.innerHTML = h;
+      // innerHTML 반영 후 약간 딜레이를 두고 마우스 이벤트 시퀀스로 에디터 활성화
+      setTimeout(function() {
+        try { f.contentWindow.focus(); } catch(er) {}
         try { e.focus(); } catch(er) {}
-        try { var rng=doc.createRange(),sel=f.contentWindow.getSelection(); rng.selectNodeContents(e); rng.collapse(false); sel.removeAllRanges(); sel.addRange(rng); } catch(er) {}
-      }
+        ['mousedown','mouseup','click'].forEach(function(ev) {
+          try { e.dispatchEvent(new MouseEvent(ev, {bubbles:true, cancelable:true, view:f.contentWindow})); } catch(er) {}
+        });
+        try {
+          var rng = doc.createRange(), sel = f.contentWindow.getSelection();
+          rng.selectNodeContents(e); rng.collapse(false);
+          sel.removeAllRanges(); sel.addRange(rng);
+        } catch(er) {}
+      }, 200);
     }
     var ah = d.am&&d.am.length ? '<ul>'+d.am.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul>' : '';
     var ph = d.pm&&d.pm.length ? '<ul>'+d.pm.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul>' : '';
