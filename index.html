@@ -884,14 +884,13 @@ updateCfBtn();
 
 /* ── 북마크릿 ── */
 function _honeyBmFn() {
-  navigator.clipboard.readText().then(function(t) {
+  function _run(t) {
     var i = t.indexOf("HONEY:");
     if (i < 0) { alert("honey 앱에서 자동입력용 데이터를 먼저 복사해주세요."); return; }
     var d;
-    try { d = JSON.parse(t.slice(i + 6)); } catch(e) { alert("오류: " + e.message); return; }
+    try { d = JSON.parse(t.slice(i + 6)); } catch(e) { alert("파싱 오류: " + e.message); return; }
     var r = document.getElementById("reportName");
     if (r) { r.value = d.title; r.dispatchEvent(new Event("input", {bubbles:true})); }
-    // 작성일 두 필드 모두 채우기 (일일업무일지 + 출퇴근보고 섹션)
     ["editorForm_3", "editorForm_14"].forEach(function(fid) {
       var de = document.getElementById(fid);
       if (de) { de.value = d.date; de.dispatchEvent(new Event("input", {bubbles:true})); de.dispatchEvent(new Event("change", {bubbles:true})); }
@@ -903,7 +902,6 @@ function _honeyBmFn() {
       var e = doc.querySelector(".DEXT_fiVe_EdiTor,[id^='ue_editor_main']");
       if (e) {
         e.innerHTML = h;
-        // 에디터 활성화 (클릭 + 포커스 + 커서 끝으로)
         try { e.click(); } catch(er) {}
         try { e.focus(); } catch(er) {}
         try {
@@ -921,7 +919,18 @@ function _honeyBmFn() {
     fill("editorForm_5", ah);
     fill("editorForm_8", ph);
     alert("✅ 자동입력 완료!\n세부내용·산출물은 직접 입력해주세요.");
-  }).catch(function() { alert("클립보드 권한을 허용해주세요."); });
+  }
+  function _fallback() {
+    var t = prompt("honey 앱에서 복사한 텍스트를 여기에 붙여넣기(Ctrl+V) 하세요:");
+    if (t) _run(t);
+  }
+  try {
+    if (navigator.clipboard && navigator.clipboard.readText) {
+      navigator.clipboard.readText().then(_run).catch(_fallback);
+    } else {
+      _fallback();
+    }
+  } catch(e) { _fallback(); }
 }
 document.getElementById("honey-bm-link").href = "javascript:(" + _honeyBmFn.toString() + ")()";
 </script>
