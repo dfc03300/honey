@@ -376,6 +376,23 @@
     .btn-auto-copy:hover { background: #1e4a8a; }
     .btn-auto-copy.ok    { background: var(--ok); }
 
+    /* 출퇴근 보고 이미지 섹션 */
+    .teams-section {
+      margin-top: 16px; padding: 13px 14px;
+      background: var(--surface-sub); border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+    .teams-btn-row { display: flex; gap: 8px; margin-top: 10px; }
+    .btn-teams {
+      flex: 1; padding: 10px 8px;
+      border: none; border-radius: var(--radius-sm);
+      font-size: 13px; font-weight: 700; cursor: pointer;
+      font-family: inherit; transition: opacity .15s;
+    }
+    .btn-teams:hover { opacity: .82; }
+    .btn-teams-in  { background: #4a6fa5; color: #fff; }
+    .btn-teams-out { background: #5a5a7a; color: #fff; }
+
     @media (min-width: 680px) {
       .container { padding: 16px 20px 60px; max-width: 680px; margin: 0 auto; }
     }
@@ -440,6 +457,16 @@
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- 출퇴근 보고 이미지 -->
+      <div class="teams-section">
+        <div class="bm-label">📸 출퇴근 보고 이미지 <span>Teams 메시지 스타일</span></div>
+        <div class="bm-tip">현재 시간으로 Teams 채팅 이미지를 생성하고 바로 다운로드합니다</div>
+        <div class="teams-btn-row">
+          <button class="btn-teams btn-teams-in"  onclick="genTeamsImg('in')">☀️ 출근 이미지 생성</button>
+          <button class="btn-teams btn-teams-out" onclick="genTeamsImg('out')">🌙 퇴근 이미지 생성</button>
+        </div>
       </div>
 
       <button class="btn-gen" onclick="genDoc()">업무일지 생성 →</button>
@@ -882,6 +909,85 @@ _loadCreds();
 updateCfBadge();
 updateCfBtn();
 
+/* ── 출퇴근 보고 이미지 생성 ── */
+function genTeamsImg(type) {
+  var now = new Date();
+  var hh = String(now.getHours()).padStart(2, '0');
+  var mm = String(now.getMinutes()).padStart(2, '0');
+  var ampm = now.getHours() < 12 ? '오전' : '오후';
+  var h12 = now.getHours() % 12 || 12;
+  var timeStr = ampm + ' ' + h12 + ':' + String(now.getMinutes()).padStart(2, '0');
+
+  var msg = type === 'in'
+    ? '재택근무 시작하겠습니다.'
+    : '재택근무 마치겠습니다.';
+
+  // 파일명용 날짜 YYMMDD
+  var yy = String(now.getFullYear()).slice(2);
+  var mo = String(now.getMonth() + 1).padStart(2, '0');
+  var dd = String(now.getDate()).padStart(2, '0');
+  var fname = yy + mo + dd + '_' + (type === 'in' ? '출근보고' : '퇴근보고') + '.png';
+
+  // Canvas 생성
+  var dpr = window.devicePixelRatio || 1;
+  var W = 320, H = 80; // 논리 픽셀
+  var c = document.createElement('canvas');
+  c.width  = W * dpr;
+  c.height = H * dpr;
+  c.style.width  = W + 'px';
+  c.style.height = H + 'px';
+  var ctx = c.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  // 배경 (흰색)
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, W, H);
+
+  // 말풍선 (오른쪽 정렬, Teams 스타일)
+  var bubblePad = { h: 10, v: 8 };
+  var font = 'Segoe UI';
+  ctx.font = '14px "' + font + '"';
+  var msgW = ctx.measureText(msg).width;
+  var bubbleW = msgW + bubblePad.h * 2;
+  var bubbleH = 36;
+  var bx = W - bubbleW - 14;
+  var by = 14;
+  var br = 12;
+
+  // 말풍선 그리기 (둥근 직사각형)
+  ctx.beginPath();
+  ctx.moveTo(bx + br, by);
+  ctx.lineTo(bx + bubbleW - br, by);
+  ctx.quadraticCurveTo(bx + bubbleW, by, bx + bubbleW, by + br);
+  ctx.lineTo(bx + bubbleW, by + bubbleH - br);
+  ctx.quadraticCurveTo(bx + bubbleW, by + bubbleH, bx + bubbleW - br, by + bubbleH);
+  ctx.lineTo(bx + br, by + bubbleH);
+  ctx.quadraticCurveTo(bx, by + bubbleH, bx, by + bubbleH - br);
+  ctx.lineTo(bx, by + br);
+  ctx.quadraticCurveTo(bx, by, bx + br, by);
+  ctx.closePath();
+  ctx.fillStyle = '#EDEDF8';
+  ctx.fill();
+
+  // 메시지 텍스트
+  ctx.fillStyle = '#242424';
+  ctx.font = '14px "' + font + '"';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(msg, bx + bubblePad.h, by + bubbleH / 2);
+
+  // 시간 텍스트 (말풍선 왼쪽 아래, 회색)
+  ctx.fillStyle = '#7D7D7D';
+  ctx.font = '11px "' + font + '"';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText(timeStr, bx - ctx.measureText(timeStr).width - 6, by + bubbleH - 4);
+
+  // 다운로드
+  var a = document.createElement('a');
+  a.download = fname;
+  a.href = c.toDataURL('image/png');
+  a.click();
+}
+
 /* ── 북마크릿 ── */
 function _honeyBmFn() {
   navigator.clipboard.readText().then(function(t) {
@@ -891,14 +997,30 @@ function _honeyBmFn() {
     try { d = JSON.parse(t.slice(i + 6)); } catch(e) { alert("오류: " + e.message); return; }
     var r = document.getElementById("reportName");
     if (r) { r.value = d.title; r.dispatchEvent(new Event("input", {bubbles:true})); }
-    var de = document.getElementById("editorForm_3");
-    if (de) { de.value = d.date; de.dispatchEvent(new Event("input", {bubbles:true})); de.dispatchEvent(new Event("change", {bubbles:true})); }
+    // 작성일 두 필드 모두 채우기 (일일업무일지 + 출퇴근보고 섹션)
+    ["editorForm_3", "editorForm_14"].forEach(function(fid) {
+      var de = document.getElementById(fid);
+      if (de) { de.value = d.date; de.dispatchEvent(new Event("input", {bubbles:true})); de.dispatchEvent(new Event("change", {bubbles:true})); }
+    });
     function fill(id, h) {
       var f = document.getElementById("dext_frame_" + id);
       if (!f) return;
       var doc = f.contentDocument || f.contentWindow.document;
       var e = doc.querySelector(".DEXT_fiVe_EdiTor,[id^='ue_editor_main']");
-      if (e) e.innerHTML = h;
+      if (e) {
+        e.innerHTML = h;
+        // 에디터 활성화 (클릭 + 포커스 + 커서 끝으로)
+        try { e.click(); } catch(er) {}
+        try { e.focus(); } catch(er) {}
+        try {
+          var range = doc.createRange();
+          var sel = f.contentWindow.getSelection();
+          range.selectNodeContents(e);
+          range.collapse(false);
+          sel.removeAllRanges();
+          sel.addRange(range);
+        } catch(er) {}
+      }
     }
     var ah = d.am && d.am.length ? "<ul>" + d.am.map(function(t) { return "<li>" + t + "</li>"; }).join("") + "</ul>" : "";
     var ph = d.pm && d.pm.length ? "<ul>" + d.pm.map(function(t) { return "<li>" + t + "</li>"; }).join("") + "</ul>" : "";
