@@ -884,53 +884,85 @@ updateCfBtn();
 
 /* ── 북마크릿 ── */
 function _honeyBmFn() {
+  /* 토스트 메시지 */
+  function _toast(msg, color) {
+    var t = document.getElementById('__hnt__');
+    if (t) t.remove();
+    t = document.createElement('div');
+    t.id = '__hnt__';
+    t.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%);padding:11px 22px;border-radius:8px;font-size:14px;font-weight:600;color:#fff;z-index:2147483647;font-family:sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.3);background:' + (color||'#222') + ';white-space:nowrap;';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(function(){ t.remove(); }, 3500);
+  }
+  /* 모달 (textarea 붙여넣기용) */
+  function _modal(onSubmit) {
+    var old = document.getElementById('__hnm__');
+    if (old) { old.remove(); return; }
+    var ov = document.createElement('div');
+    ov.id = '__hnm__';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2147483646;display:flex;align-items:center;justify-content:center;font-family:sans-serif;';
+    var bx = document.createElement('div');
+    bx.style.cssText = 'background:#fff;border-radius:14px;padding:22px 20px 18px;width:360px;max-width:92vw;box-shadow:0 8px 32px rgba(0,0,0,.3);position:relative;';
+    var ttl = document.createElement('div');
+    ttl.style.cssText = 'font-size:15px;font-weight:700;margin-bottom:6px;';
+    ttl.textContent = '🍯 honey 자동입력';
+    var desc = document.createElement('div');
+    desc.style.cssText = 'font-size:12px;color:#666;margin-bottom:10px;';
+    desc.textContent = 'honey 앱에서 복사한 데이터를 아래에 붙여넣기(Ctrl+V) 후 실행하세요.';
+    var ta = document.createElement('textarea');
+    ta.style.cssText = 'width:100%;height:72px;border:1.5px solid #ccc;border-radius:6px;padding:8px;font-size:12px;resize:none;box-sizing:border-box;outline:none;';
+    ta.placeholder = 'HONEY:{...} 데이터 붙여넣기';
+    var btn = document.createElement('button');
+    btn.style.cssText = 'margin-top:10px;width:100%;padding:10px;background:#2c2c2c;color:#fff;border:none;border-radius:7px;font-size:14px;font-weight:700;cursor:pointer;';
+    btn.textContent = '자동입력 실행';
+    btn.onclick = function(){ ov.remove(); onSubmit(ta.value); };
+    var x = document.createElement('button');
+    x.style.cssText = 'position:absolute;top:10px;right:14px;background:none;border:none;font-size:18px;cursor:pointer;color:#999;line-height:1;';
+    x.textContent = '✕';
+    x.onclick = function(){ ov.remove(); };
+    bx.appendChild(x); bx.appendChild(ttl); bx.appendChild(desc); bx.appendChild(ta); bx.appendChild(btn);
+    ov.appendChild(bx);
+    document.body.appendChild(ov);
+    ta.focus();
+  }
+  /* 실제 입력 처리 */
   function _run(t) {
-    var i = t.indexOf("HONEY:");
-    if (i < 0) { alert("honey 앱에서 자동입력용 데이터를 먼저 복사해주세요."); return; }
+    if (!t) return;
+    var i = t.indexOf('HONEY:');
+    if (i < 0) { _toast('⚠ HONEY: 데이터가 없어요. honey 앱에서 먼저 복사하세요.', '#b94040'); return; }
     var d;
-    try { d = JSON.parse(t.slice(i + 6)); } catch(e) { alert("파싱 오류: " + e.message); return; }
-    var r = document.getElementById("reportName");
-    if (r) { r.value = d.title; r.dispatchEvent(new Event("input", {bubbles:true})); }
-    ["editorForm_3", "editorForm_14"].forEach(function(fid) {
+    try { d = JSON.parse(t.slice(i + 6)); } catch(e) { _toast('파싱 오류: ' + e.message, '#b94040'); return; }
+    var r = document.getElementById('reportName');
+    if (r) { r.value = d.title; r.dispatchEvent(new Event('input',{bubbles:true})); }
+    ['editorForm_3','editorForm_14'].forEach(function(fid){
       var de = document.getElementById(fid);
-      if (de) { de.value = d.date; de.dispatchEvent(new Event("input", {bubbles:true})); de.dispatchEvent(new Event("change", {bubbles:true})); }
+      if (de) { de.value = d.date; de.dispatchEvent(new Event('input',{bubbles:true})); de.dispatchEvent(new Event('change',{bubbles:true})); }
     });
     function fill(id, h) {
-      var f = document.getElementById("dext_frame_" + id);
+      var f = document.getElementById('dext_frame_'+id);
       if (!f) return;
       var doc = f.contentDocument || f.contentWindow.document;
-      var e = doc.querySelector(".DEXT_fiVe_EdiTor,[id^='ue_editor_main']");
+      var e = doc.querySelector('.DEXT_fiVe_EdiTor,[id^="ue_editor_main"]');
       if (e) {
         e.innerHTML = h;
         try { e.click(); } catch(er) {}
         try { e.focus(); } catch(er) {}
-        try {
-          var range = doc.createRange();
-          var sel = f.contentWindow.getSelection();
-          range.selectNodeContents(e);
-          range.collapse(false);
-          sel.removeAllRanges();
-          sel.addRange(range);
-        } catch(er) {}
+        try { var rng=doc.createRange(),sel=f.contentWindow.getSelection(); rng.selectNodeContents(e); rng.collapse(false); sel.removeAllRanges(); sel.addRange(rng); } catch(er) {}
       }
     }
-    var ah = d.am && d.am.length ? "<ul>" + d.am.map(function(t) { return "<li>" + t + "</li>"; }).join("") + "</ul>" : "";
-    var ph = d.pm && d.pm.length ? "<ul>" + d.pm.map(function(t) { return "<li>" + t + "</li>"; }).join("") + "</ul>" : "";
-    fill("editorForm_5", ah);
-    fill("editorForm_8", ph);
-    alert("✅ 자동입력 완료!\n세부내용·산출물은 직접 입력해주세요.");
+    var ah = d.am&&d.am.length ? '<ul>'+d.am.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul>' : '';
+    var ph = d.pm&&d.pm.length ? '<ul>'+d.pm.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul>' : '';
+    fill('editorForm_5', ah);
+    fill('editorForm_8', ph);
+    _toast('✅ 자동입력 완료! 세부내용·산출물은 직접 입력해주세요.', '#3a7a50');
   }
-  function _fallback() {
-    var t = prompt("honey 앱에서 복사한 텍스트를 여기에 붙여넣기(Ctrl+V) 하세요:");
-    if (t) _run(t);
-  }
+  /* 클립보드 → 실패시 모달 */
   try {
     if (navigator.clipboard && navigator.clipboard.readText) {
-      navigator.clipboard.readText().then(_run).catch(_fallback);
-    } else {
-      _fallback();
-    }
-  } catch(e) { _fallback(); }
+      navigator.clipboard.readText().then(function(t){ _run(t); }).catch(function(){ _modal(_run); });
+    } else { _modal(_run); }
+  } catch(e) { _modal(_run); }
 }
 document.getElementById("honey-bm-link").href = "javascript:(" + _honeyBmFn.toString() + ")()";
 </script>
